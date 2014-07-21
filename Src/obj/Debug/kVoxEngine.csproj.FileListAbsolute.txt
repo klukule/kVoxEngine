@@ -1,0 +1,8 @@
+D:\ENGINES\kVoxEngine\kVoxEngine\bin\Debug\kVoxEngine.exe.config
+D:\ENGINES\kVoxEngine\Src\bin\Debug\kVoxEngine.exe.config
+D:\ENGINES\kVoxEngine\Bin\Debug\kVoxEngine.exe.config
+D:\ENGINES\kVoxEngine\Bin\Debug\kVoxEngine.exe
+D:\ENGINES\kVoxEngine\Bin\Debug\kVoxEngine.pdb
+D:\ENGINES\kVoxEngine\Src\obj\Debug\kVoxEngine.csprojResolveAssemblyReference.cache
+D:\ENGINES\kVoxEngine\Src\obj\Debug\kVoxEngine.exe
+D:\ENGINES\kVoxEngine\Src\obj\Debug\kVoxEngine.pdb
