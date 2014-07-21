@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using OpenGL;
 using Tao.FreeGlut;
+using SimplexNoise;
 
 namespace kVoxEngine
 {
@@ -59,7 +60,10 @@ namespace kVoxEngine
             {
                 for (int y = -50; y < 50; y++)
                 {
-                    terrain.Add(OpenGL.Geometry.CreateCube(program, new Vector3(x, 0, y), new Vector3(x + 1, 1, y + 1)));
+                    float h = Noise.Generate((x + 50) / 32f, (y + 50) / 45f);
+                    h = (float)Math.Round(h * 8);
+
+                    terrain.Add(OpenGL.Geometry.CreateCube(program, new Vector3(x, h, y), new Vector3(x + 1, h + 1, y + 1)));
                 }
             }
 
