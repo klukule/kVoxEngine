@@ -17,6 +17,7 @@ namespace kVoxEngine
         private static ShaderProgram program;
         private static bool left, right, up, down, space;
         private static System.Diagnostics.Stopwatch watch;
+        private static VoxelChunk vk;
 
         static void Main(string[] args)
         {
@@ -39,7 +40,7 @@ namespace kVoxEngine
 
             Gl.Enable(EnableCap.DepthTest);
 
-            Gl.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
+            //Gl.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
 
             // create the shader program
             program = new ShaderProgram(vertexShaderSource, fragmentShaderSource);
@@ -68,6 +69,7 @@ namespace kVoxEngine
             }
 
             watch = System.Diagnostics.Stopwatch.StartNew();
+            vk = new VoxelChunk();
             Glut.glutMainLoop();
         }
         private static bool mouseDown = false;
@@ -158,32 +160,42 @@ namespace kVoxEngine
 
             Gl.UseProgram(program);
             program["view_matrix"].SetValue(camera.ViewMatrix);
-
-            foreach(var cube in terrain)
-            {
-                cube.Draw();
-            }
-
+            vk.RenderWithVAOSimple(program);
+            
             Glut.glutSwapBuffers();
         }
 
         public static string fragmentShaderSource = @"
-uniform vec3 color;
- 
+#version 130
+
+varying vec3 vertex_light_position;
+varying vec3 vertex_normal;
+varying vec3 vertex_color;
 void main(void)
 {
-  gl_FragColor = vec4(color, 1);
+  float diffuse_value = max(dot(vertex_normal, vertex_light_position), 0.0);
+  gl_FragColor = vec4(vertex_color, 1.0) * max(0.7, diffuse_value);
 }";
 
         public static string vertexShaderSource = @"
 uniform mat4 projection_matrix;
-uniform mat4 view_matrix;
 uniform mat4 model_matrix;
+uniform mat4 view_matrix;
+uniform vec3 color;
  
 attribute vec3 in_position;
+attribute vec3 in_normal;
+ 
+varying vec3 vertex_light_position;
+varying vec3 vertex_normal;
+varying vec3 vertex_color;
  
 void main(void)
 {
+  vertex_normal = normalize((model_matrix * vec4(in_normal, 0)).xyz);
+  vertex_light_position = normalize(vec3(0.5, 0.3, 0.2));
+  vertex_color = color;
+ 
   gl_Position = projection_matrix * view_matrix * model_matrix * vec4(in_position, 1);
 }";
     }
