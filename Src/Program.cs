@@ -18,6 +18,11 @@ namespace kVoxEngine
         private static bool left, right, up, down, space;
         private static System.Diagnostics.Stopwatch watch;
         private static VoxelChunk vk;
+        private static VoxelChunk vk2;
+        private static VoxelChunk vk3;
+        private static VoxelChunk vk4;
+        private static Frustum frustum;
+        private static Matrix4 projectionMatrix;
         static void Main(string[] args)
         {
             Glut.glutInit();
@@ -46,15 +51,24 @@ namespace kVoxEngine
             // create the shader program for "terrain"
             program = new ShaderProgram(vertexShaderSource, fragmentShaderSource);
             program["color"].SetValue(new Vector3(0, 1, 0));
-            program["projection_matrix"].SetValue(Matrix4.CreatePerspectiveFieldOfView(0.45f, (float)width / height, 0.1f, 1000f));
+            projectionMatrix = Matrix4.CreatePerspectiveFieldOfView(0.45f, (float)width / height, 0.1f, 1000f);
+            program["projection_matrix"].SetValue(projectionMatrix);
             program["model_matrix"].SetValue(Matrix4.CreateTranslation(new Vector3(0, 0, 0)) * Matrix4.CreateRotation(new Vector3(0, 0, 0), 0.0f));
 
             //Setup camera
             camera = new Camera(new Vector3(0, 0, 10), Quaternion.Identity);
             camera.SetDirection(new Vector3(0, 0, -1));
 
-            watch = System.Diagnostics.Stopwatch.StartNew();            
-            vk = new VoxelChunk();
+            watch = System.Diagnostics.Stopwatch.StartNew();
+            //instance few voxel chunks
+            vk = new VoxelChunk(0,0);
+            vk2 = new VoxelChunk(0,32);
+            vk3 = new VoxelChunk(32,0);
+            vk4 = new VoxelChunk(32,32);
+
+            //init frustum
+            frustum = new Frustum();
+            frustum.UpdateFrustum(projectionMatrix, camera.ViewMatrix);
             Glut.glutMainLoop();
         }
         private static bool mouseDown = false;
@@ -133,6 +147,8 @@ namespace kVoxEngine
             watch.Stop();
             float deltaTime = (float)watch.ElapsedTicks / System.Diagnostics.Stopwatch.Frequency;
             watch.Restart();
+            program["view_matrix"].SetValue(camera.ViewMatrix);
+            frustum.UpdateFrustum(projectionMatrix, camera.ViewMatrix);
             if (down) camera.MoveRelative(Vector3.UnitZ * deltaTime * 5);
             if (up) camera.MoveRelative(-Vector3.UnitZ * deltaTime * 5);
             if (left) camera.MoveRelative(-Vector3.UnitX * deltaTime * 5);
@@ -143,10 +159,13 @@ namespace kVoxEngine
             Gl.Viewport(0, 0, width, height);
             Gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
+            if (frustum.Intersects(vk.BoundingBox)) vk.RenderWithVAOSimple(program);
+            if (frustum.Intersects(vk2.BoundingBox)) vk2.RenderWithVAOSimple(program);
+            if (frustum.Intersects(vk3.BoundingBox)) vk3.RenderWithVAOSimple(program);
+            if (frustum.Intersects(vk4.BoundingBox)) vk4.RenderWithVAOSimple(program);
 
             Gl.UseProgram(program);
             program["view_matrix"].SetValue(camera.ViewMatrix);
-            vk.RenderWithVAOSimple(program);
             Glut.glutSwapBuffers();
         }
 

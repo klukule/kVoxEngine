@@ -17,6 +17,9 @@ namespace kVoxEngine
         /// </summary>
         private byte[] voxelData;
 
+        private int offsetX;
+        private int offsetZ;
+
         /// <summary>
         /// The translation of this VoxelChunk to bring it into world co-ordinates.
         /// </summary>
@@ -24,8 +27,10 @@ namespace kVoxEngine
 
         public AxisAlignedBoundingBox BoundingBox { get; private set; }
 
-        public VoxelChunk()
+        public VoxelChunk(int oX,int oZ)
         {
+            offsetX = oX;
+            offsetZ = oZ;
             voxelData = new byte[32 * 32 * 32];
 
             // for now, lets just fill this with voxels
@@ -33,7 +38,7 @@ namespace kVoxEngine
 
             this.ModelMatrix = Matrix4.Identity;
 
-            this.BoundingBox = new AxisAlignedBoundingBox(new Vector3(0, 0, 0), new Vector3(32, 0, 32));
+            this.BoundingBox = new AxisAlignedBoundingBox(new Vector3(0 + offsetX, 0, 0 + offsetZ), new Vector3(32 + offsetX, 0, 32 + offsetZ));
         }
         private VAO chunkVAO;
         private void AddCube(Vector3 min, Vector3 max, List<Vector3> vertices, List<int> elements)
@@ -67,13 +72,13 @@ namespace kVoxEngine
             {
                 List<Vector3> vertices = new List<Vector3>();
                 List<int> elements = new List<int>();
-                for (int x = 0; x < 32; x++)
+                for (int x = 0 + offsetX; x < 32 + offsetX; x++)
                 {
-                    for (int y = 0; y < 32; y++)
+                    for (int y = 0 + offsetZ; y < 32 + offsetZ; y++)
                     {
                         float h = Noise.Generate((x + 32) / 32f, (y + 32) / 45f);
                         h = (float)Math.Round(h * 8);
-                        for(float test = -6; test <= h; h--)
+                        for(float test = -10; test <= h; h--)
                         AddCube(new Vector3(x, h, y), new Vector3(x + 1, h + 1, y + 1), vertices, elements);
                         
                     }
