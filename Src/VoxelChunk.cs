@@ -67,13 +67,15 @@ namespace kVoxEngine
             {
                 List<Vector3> vertices = new List<Vector3>();
                 List<int> elements = new List<int>();
-                for (int x = 0; x < 64; x++)
+                for (int x = 0; x < 32; x++)
                 {
-                    for (int y = 0; y < 64; y++)
+                    for (int y = 0; y < 32; y++)
                     {
                         float h = Noise.Generate((x + 32) / 32f, (y + 32) / 45f);
                         h = (float)Math.Round(h * 8);
+                        for(float test = -6; test <= h; h--)
                         AddCube(new Vector3(x, h, y), new Vector3(x + 1, h + 1, y + 1), vertices, elements);
+                        
                     }
                 }
 

@@ -38,6 +38,8 @@ namespace kVoxEngine
 
             Gl.Enable(EnableCap.DepthTest);
             Gl.Enable(EnableCap.Blend);
+            Gl.Enable(EnableCap.Multisample);
+            Gl.Enable(EnableCap.SampleAlphaToCoverage);
 
             //Gl.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
 
