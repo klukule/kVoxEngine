@@ -17,18 +17,20 @@ namespace kVoxEngine
         private static ShaderProgram program;
         private static bool left, right, up, down, space;
         private static System.Diagnostics.Stopwatch watch;
-        private static VoxelChunk vk;
-        private static VoxelChunk vk2;
-        private static VoxelChunk vk3;
-        private static VoxelChunk vk4;
+        private static System.Diagnostics.Stopwatch timefromstart;
         private static Frustum frustum;
         private static Matrix4 projectionMatrix;
+        private static VoxelChunk[] chunks;
         static void Main(string[] args)
         {
+            timefromstart = System.Diagnostics.Stopwatch.StartNew();
+            Console.WriteLine("Initializing GLUT - {0}s", getTimeFromStart().ToString());
             Glut.glutInit();
             Glut.glutInitDisplayMode(Glut.GLUT_DOUBLE | Glut.GLUT_DEPTH);
             Glut.glutInitWindowSize(width, height);
             Glut.glutCreateWindow("kVoxGame");
+            Console.WriteLine("GLUT window created - {0}s", getTimeFromStart().ToString());
+
             //Callbacks
             Glut.glutIdleFunc(OnRenderFrame);
             Glut.glutDisplayFunc(OnDisplay);
@@ -41,35 +43,55 @@ namespace kVoxEngine
             Glut.glutKeyboardFunc(OnKeyboardDown);
             Glut.glutKeyboardUpFunc(OnKeyboardUp);
 
+            Console.WriteLine("GLUT callbacks binded - {0}s", getTimeFromStart().ToString());
+
             Gl.Enable(EnableCap.DepthTest);
             Gl.Enable(EnableCap.Blend);
             Gl.Enable(EnableCap.Multisample);
             Gl.Enable(EnableCap.SampleAlphaToCoverage);
+            Gl.Enable(EnableCap.FragmentLightingSgix);
+
+            Console.WriteLine("GL Enables enabled :D - {0}s", getTimeFromStart().ToString());
+
 
             //Gl.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
 
             // create the shader program for "terrain"
             program = new ShaderProgram(vertexShaderSource, fragmentShaderSource);
-            program["color"].SetValue(new Vector3(0, 1, 0));
+            program["color"].SetValue(new Vector3(0, 0.8, 0));
             projectionMatrix = Matrix4.CreatePerspectiveFieldOfView(0.45f, (float)width / height, 0.1f, 1000f);
             program["projection_matrix"].SetValue(projectionMatrix);
             program["model_matrix"].SetValue(Matrix4.CreateTranslation(new Vector3(0, 0, 0)) * Matrix4.CreateRotation(new Vector3(0, 0, 0), 0.0f));
+            Console.WriteLine("Shader program (program) compiled and data injected - {0}s", getTimeFromStart().ToString());
+
 
             //Setup camera
             camera = new Camera(new Vector3(0, 0, 10), Quaternion.Identity);
             camera.SetDirection(new Vector3(0, 0, -1));
 
+            Console.WriteLine("Cam setup complete - {0}s", getTimeFromStart().ToString());
+
+
             watch = System.Diagnostics.Stopwatch.StartNew();
+            chunks = new VoxelChunk[4];
             //instance few voxel chunks
-            vk = new VoxelChunk(0,0);
-            vk2 = new VoxelChunk(0,32);
-            vk3 = new VoxelChunk(32,0);
-            vk4 = new VoxelChunk(32,32);
+            chunks[0] = new VoxelChunk(0,0);
+            chunks[1] = new VoxelChunk(0, 32);
+            chunks[2] = new VoxelChunk(32, 0);
+            chunks[3] = new VoxelChunk(32, 32);
+            Console.WriteLine("Chunks added to array - {0}s", getTimeFromStart().ToString());
 
             //init frustum
             frustum = new Frustum();
             frustum.UpdateFrustum(projectionMatrix, camera.ViewMatrix);
+            Console.WriteLine("starting main GLUT loop - {0}s", getTimeFromStart().ToString());
+
             Glut.glutMainLoop();
+        }
+        private static float getTimeFromStart()
+        {
+            float timefromstartf = (float)timefromstart.ElapsedTicks / System.Diagnostics.Stopwatch.Frequency;
+            return timefromstartf;
         }
         private static bool mouseDown = false;
         private static int downX, downY;
@@ -93,6 +115,7 @@ namespace kVoxEngine
             {
                 Glut.glutSetCursor(Glut.GLUT_CURSOR_LEFT_ARROW);
                 Glut.glutWarpPointer(downX, downY);
+                
             }
         }
         private static void OnMove(int x, int y)
@@ -144,6 +167,7 @@ namespace kVoxEngine
 
         private static void OnRenderFrame()
         {
+            int vertCount = 0;
             watch.Stop();
             float deltaTime = (float)watch.ElapsedTicks / System.Diagnostics.Stopwatch.Frequency;
             watch.Restart();
@@ -155,20 +179,23 @@ namespace kVoxEngine
             if (right) camera.MoveRelative(Vector3.UnitX * deltaTime * 5);
             if (space) camera.MoveRelative(Vector3.Up * deltaTime * 3);
             float fps = 1 / deltaTime;
-            Glut.glutSetWindowTitle(((int)fps).ToString());
+            
             Gl.Viewport(0, 0, width, height);
             Gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-
-            if (frustum.Intersects(vk.BoundingBox)) vk.RenderWithVAOSimple(program);
-            if (frustum.Intersects(vk2.BoundingBox)) vk2.RenderWithVAOSimple(program);
-            if (frustum.Intersects(vk3.BoundingBox)) vk3.RenderWithVAOSimple(program);
-            if (frustum.Intersects(vk4.BoundingBox)) vk4.RenderWithVAOSimple(program);
-
+            // draw our voxel chunks
+            foreach (var chunk in chunks)
+            {
+                if (frustum.Intersects(chunk.BoundingBox))
+                {
+                    chunk.RenderWithVAOSimple(program);
+                    vertCount += chunk.vertexCount();
+                }
+            }
+            Glut.glutSetWindowTitle("kVoxGame - " + ((int)fps).ToString() + " fps " + vertCount.ToString() + " Verticles");
             Gl.UseProgram(program);
             program["view_matrix"].SetValue(camera.ViewMatrix);
             Glut.glutSwapBuffers();
         }
-
         public static string fragmentShaderSource = @"" + File.ReadAllText(@"" + Directory.GetCurrentDirectory() + "/shaders/main.frag").ToString();
         public static string vertexShaderSource = @"" + File.ReadAllText(@"" + Directory.GetCurrentDirectory() + "/shaders/main.vert").ToString();
     }

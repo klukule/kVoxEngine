@@ -19,6 +19,7 @@ namespace kVoxEngine
 
         private int offsetX;
         private int offsetZ;
+        private int vertCount;
 
         /// <summary>
         /// The translation of this VoxelChunk to bring it into world co-ordinates.
@@ -46,42 +47,50 @@ namespace kVoxEngine
             int offset = vertices.Count;
 
             vertices.AddRange(new Vector3[] {
-        new Vector3(min.x, min.y, max.z),
-        new Vector3(max.x, min.y, max.z),
-        new Vector3(min.x, max.y, max.z),
-        new Vector3(max.x, max.y, max.z),
-        new Vector3(max.x, min.y, min.z),
-        new Vector3(max.x, max.y, min.z),
-        new Vector3(min.x, max.y, min.z),
-        new Vector3(min.x, min.y, min.z)
-    });
+                new Vector3(min.x, min.y, max.z),
+                new Vector3(max.x, min.y, max.z),
+                new Vector3(min.x, max.y, max.z),
+                new Vector3(max.x, max.y, max.z),
+                new Vector3(max.x, min.y, min.z),
+                new Vector3(max.x, max.y, min.z),
+                new Vector3(min.x, max.y, min.z),
+                new Vector3(min.x, min.y, min.z)
+            });
 
             elements.AddRange(new int[] { 
-        0 + offset, 1 + offset, 2 + offset, 1 + offset, 3 + offset, 2 + offset,
-        1 + offset, 4 + offset, 3 + offset, 4 + offset, 5 + offset, 3 + offset,
-        4 + offset, 7 + offset, 5 + offset, 7 + offset, 6 + offset, 5 + offset,
-        7 + offset, 0 + offset, 6 + offset, 0 + offset, 2 + offset, 6 + offset,
-        7 + offset, 4 + offset, 0 + offset, 4 + offset, 1 + offset, 0 + offset,
-        2 + offset, 3 + offset, 6 + offset, 3 + offset, 5 + offset, 6 + offset
-    });
+                0 + offset, 1 + offset, 2 + offset, 1 + offset, 3 + offset, 2 + offset,
+                1 + offset, 4 + offset, 3 + offset, 4 + offset, 5 + offset, 3 + offset,
+                4 + offset, 7 + offset, 5 + offset, 7 + offset, 6 + offset, 5 + offset,
+                7 + offset, 0 + offset, 6 + offset, 0 + offset, 2 + offset, 6 + offset,
+                7 + offset, 4 + offset, 0 + offset, 4 + offset, 1 + offset, 0 + offset,
+                2 + offset, 3 + offset, 6 + offset, 3 + offset, 5 + offset, 6 + offset
+            });
         }
-        /*private void AddFace(Vector3 v1, Vector3 v2, Vector3 v3, Vector3 v4, List<Vector3> vertices, List<int> elements)
+        private void AddFace(Vector3 v1, Vector3 v2, Vector3 v3, Vector3 v4, List<Vector3> vertices, List<int> elements)
         {
             int offset = vertices.Count;
 
             vertices.AddRange(new Vector3[] {
-        new Vector3(v1.x, v1.y, v1.z),
-        new Vector3(v2.x, v2.y, v2.z),
-        new Vector3(v4.x, v4.y, v4.z),
-        new Vector3(v3.x, v3.y, v3.z)
-        
-    });
+                new Vector3(v1.x, v1.y, v1.z),
+                new Vector3(v2.x, v2.y, v2.z),
+                new Vector3(v3.x, v3.y, v3.z),
+                new Vector3(v4.x, v4.y, v4.z),
+                new Vector3(v1.x, v1.y, v1.z),
+                new Vector3(v2.x, v2.y, v2.z),
+                new Vector3(v3.x, v3.y, v3.z),
+                new Vector3(v4.x, v4.y, v4.z)
+            });
 
             elements.AddRange(new int[] { 
-        0 + offset, 1 + offset, 2 + offset, 3 + offset,
-    });
-        }*/
-
+                //0 + offset,1+offset,2+offset,1+offset,3+offset,2+offset
+                0 + offset, 1 + offset, 2 + offset, 1 + offset, 3 + offset, 2 + offset,
+                1 + offset, 4 + offset, 3 + offset, 4 + offset, 5 + offset, 3 + offset,
+                4 + offset, 7 + offset, 5 + offset, 7 + offset, 6 + offset, 5 + offset,
+                7 + offset, 0 + offset, 6 + offset, 0 + offset, 2 + offset, 6 + offset,
+                7 + offset, 4 + offset, 0 + offset, 4 + offset, 1 + offset, 0 + offset,
+                2 + offset, 3 + offset, 6 + offset, 3 + offset, 5 + offset, 6 + offset
+            });
+        }
         public void RenderWithVAOSimple(ShaderProgram program)
         {
             if (chunkVAO == null)
@@ -107,7 +116,7 @@ namespace kVoxEngine
                 Vector3[] vertex = vertices.ToArray();
                 int[] element = elements.ToArray();
                 Vector3[] normals = OpenGL.Geometry.CalculateNormals(vertex, element);
-
+                vertCount = vertex.Length;
                 chunkVAO = new VAO(program, new VBO<Vector3>(vertex), new VBO<Vector3>(normals), new VBO<int>(element, BufferTarget.ElementArrayBuffer, BufferUsageHint.StaticRead));
             }
 
@@ -115,13 +124,12 @@ namespace kVoxEngine
             
             chunkVAO.Draw();
         }
-        /*public void RenderWithVAOGreedy(ShaderProgram program, bool draw = true)
+        public int vertexCount()
         {
-            // This greedy algorithm is converted from PHP to C# from this article:
-            // http://0fps.wordpress.com/2012/06/30/meshing-in-a-minecraft-game/
-            //
-            // The original source code can be found here:
-            // https://github.com/mikolalysenko/mikolalysenko.github.com/blob/gh-pages/MinecraftMeshes/js/greedy.js
+            return vertCount;
+        }
+        public void RenderWithVAOGreedy(ShaderProgram program, bool draw = true)
+        {
             if (chunkVAO == null)
             {
                 List<Vector3> vertices = new List<Vector3>();
@@ -229,6 +237,6 @@ namespace kVoxEngine
         private bool data(int x, int y, int z)
         {
             return voxelData[x + 32 * y + 32 * 32 * z] != 0;
-        }*/
+        }
     }
 }
