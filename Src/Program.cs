@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 using OpenGL;
 using Tao.FreeGlut;
 using SimplexNoise;
@@ -11,14 +12,12 @@ namespace kVoxEngine
 {
     class Program
     {
-        private static List<VAO> terrain;
         private static int width = 1280, height = 720;
         private static Camera camera;
         private static ShaderProgram program;
         private static bool left, right, up, down, space;
         private static System.Diagnostics.Stopwatch watch;
         private static VoxelChunk vk;
-
         static void Main(string[] args)
         {
             Glut.glutInit();
@@ -39,36 +38,21 @@ namespace kVoxEngine
             Glut.glutKeyboardUpFunc(OnKeyboardUp);
 
             Gl.Enable(EnableCap.DepthTest);
+            Gl.Enable(EnableCap.Blend);
 
             //Gl.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
 
-            // create the shader program
+            // create the shader program for "terrain"
             program = new ShaderProgram(vertexShaderSource, fragmentShaderSource);
-
-            // set the color to green
             program["color"].SetValue(new Vector3(0, 1, 0));
-
-            camera = new Camera(new Vector3(0, 0, 10), Quaternion.Identity);
-            camera.SetDirection(new Vector3(0, 0, -1));
-
-            // set up some defaults for the shader program project and modelview matrices
             program["projection_matrix"].SetValue(Matrix4.CreatePerspectiveFieldOfView(0.45f, (float)width / height, 0.1f, 1000f));
             program["model_matrix"].SetValue(Matrix4.CreateTranslation(new Vector3(0, 0, 0)) * Matrix4.CreateRotation(new Vector3(0, 0, 0), 0.0f));
 
-            //create terrain
-            terrain = new List<VAO>();
-            for (int x = -50; x < 50; x++)
-            {
-                for (int y = -50; y < 50; y++)
-                {
-                    float h = Noise.Generate((x + 50) / 32f, (y + 50) / 45f);
-                    h = (float)Math.Round(h * 8);
+            //Setup camera
+            camera = new Camera(new Vector3(0, 0, 10), Quaternion.Identity);
+            camera.SetDirection(new Vector3(0, 0, -1));
 
-                    terrain.Add(OpenGL.Geometry.CreateCube(program, new Vector3(x, h, y), new Vector3(x + 1, h + 1, y + 1)));
-                }
-            }
-
-            watch = System.Diagnostics.Stopwatch.StartNew();
+            watch = System.Diagnostics.Stopwatch.StartNew();            
             vk = new VoxelChunk();
             Glut.glutMainLoop();
         }
@@ -161,42 +145,10 @@ namespace kVoxEngine
             Gl.UseProgram(program);
             program["view_matrix"].SetValue(camera.ViewMatrix);
             vk.RenderWithVAOSimple(program);
-            
             Glut.glutSwapBuffers();
         }
 
-        public static string fragmentShaderSource = @"
-#version 130
-
-varying vec3 vertex_light_position;
-varying vec3 vertex_normal;
-varying vec3 vertex_color;
-void main(void)
-{
-  float diffuse_value = max(dot(vertex_normal, vertex_light_position), 0.0);
-  gl_FragColor = vec4(vertex_color, 1.0) * max(0.7, diffuse_value);
-}";
-
-        public static string vertexShaderSource = @"
-uniform mat4 projection_matrix;
-uniform mat4 model_matrix;
-uniform mat4 view_matrix;
-uniform vec3 color;
- 
-attribute vec3 in_position;
-attribute vec3 in_normal;
- 
-varying vec3 vertex_light_position;
-varying vec3 vertex_normal;
-varying vec3 vertex_color;
- 
-void main(void)
-{
-  vertex_normal = normalize((model_matrix * vec4(in_normal, 0)).xyz);
-  vertex_light_position = normalize(vec3(0.5, 0.3, 0.2));
-  vertex_color = color;
- 
-  gl_Position = projection_matrix * view_matrix * model_matrix * vec4(in_position, 1);
-}";
+        public static string fragmentShaderSource = @"" + File.ReadAllText(@"" + Directory.GetCurrentDirectory() + "/shaders/main.frag").ToString();
+        public static string vertexShaderSource = @"" + File.ReadAllText(@"" + Directory.GetCurrentDirectory() + "/shaders/main.vert").ToString();
     }
 }

@@ -67,9 +67,9 @@ namespace kVoxEngine
             {
                 List<Vector3> vertices = new List<Vector3>();
                 List<int> elements = new List<int>();
-                for (int x = 0; x < 32; x++)
+                for (int x = 0; x < 64; x++)
                 {
-                    for (int y = 0; y < 32; y++)
+                    for (int y = 0; y < 64; y++)
                     {
                         float h = Noise.Generate((x + 32) / 32f, (y + 32) / 45f);
                         h = (float)Math.Round(h * 8);
