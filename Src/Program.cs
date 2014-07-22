@@ -24,7 +24,6 @@ namespace kVoxEngine
             Glut.glutInitDisplayMode(Glut.GLUT_DOUBLE | Glut.GLUT_DEPTH);
             Glut.glutInitWindowSize(width, height);
             Glut.glutCreateWindow("kVoxGame");
-
             //Callbacks
             Glut.glutIdleFunc(OnRenderFrame);
             Glut.glutDisplayFunc(OnDisplay);
@@ -137,7 +136,8 @@ namespace kVoxEngine
             if (left) camera.MoveRelative(-Vector3.UnitX * deltaTime * 5);
             if (right) camera.MoveRelative(Vector3.UnitX * deltaTime * 5);
             if (space) camera.MoveRelative(Vector3.Up * deltaTime * 3);
-
+            float fps = 1 / deltaTime;
+            Glut.glutSetWindowTitle(((int)fps).ToString());
             Gl.Viewport(0, 0, width, height);
             Gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
