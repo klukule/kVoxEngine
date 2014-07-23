@@ -14,13 +14,15 @@ namespace kVoxEngine
     {
         private static int width = 1280, height = 720;
         private static Camera camera;
-        private static ShaderProgram program;
+        private static ShaderProgram terrainSP;
+        private static ShaderProgram skyboxSP;
         private static bool left, right, up, down, space;
         private static System.Diagnostics.Stopwatch watch;
         private static System.Diagnostics.Stopwatch timefromstart;
         private static Frustum frustum;
         private static Matrix4 projectionMatrix;
         private static VoxelChunk[] chunks;
+        private static Texture skydomeTexture;
         static void Main(string[] args)
         {
             timefromstart = System.Diagnostics.Stopwatch.StartNew();
@@ -50,19 +52,36 @@ namespace kVoxEngine
             Gl.Enable(EnableCap.Multisample);
             Gl.Enable(EnableCap.SampleAlphaToCoverage);
             Gl.Enable(EnableCap.FragmentLightingSgix);
+            Gl.Enable(EnableCap.CullFace);
+            
 
             Console.WriteLine("GL Enables enabled :D - {0}s", getTimeFromStart().ToString());
 
+            skydomeTexture = new Texture("skydome.jpg");
 
             //Gl.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
-
-            // create the shader program for "terrain"
-            program = new ShaderProgram(vertexShaderSource, fragmentShaderSource);
-            program["color"].SetValue(new Vector3(0, 0.8, 0));
+            // create main shader program
+            terrainSP = new ShaderProgram(terrainVS, terrainFS);
+            terrainSP.Use();
+            terrainSP["color"].SetValue(new Vector3(0, 0.8, 0));
             projectionMatrix = Matrix4.CreatePerspectiveFieldOfView(0.45f, (float)width / height, 0.1f, 1000f);
-            program["projection_matrix"].SetValue(projectionMatrix);
-            program["model_matrix"].SetValue(Matrix4.CreateTranslation(new Vector3(0, 0, 0)) * Matrix4.CreateRotation(new Vector3(0, 0, 0), 0.0f));
-            Console.WriteLine("Shader program (program) compiled and data injected - {0}s", getTimeFromStart().ToString());
+            terrainSP["projection_matrix"].SetValue(projectionMatrix);
+            terrainSP["model_matrix"].SetValue(Matrix4.CreateTranslation(new Vector3(0, 0, 0)) * Matrix4.CreateRotation(new Vector3(0, 0, 0), 0.0f));
+            Console.WriteLine("Shader program (main) compiled and data injected - {0}s", getTimeFromStart().ToString());
+
+            // create main skybox program
+            skyboxSP = new ShaderProgram(skyboxVS, skyboxFS);
+            skyboxSP.Use();
+            skyboxSP["color"].SetValue(new Vector3(0.2, 1.0, 1.0));
+            skyboxSP["resolution"].SetValue(new Vector2(width, height));
+            projectionMatrix = Matrix4.CreatePerspectiveFieldOfView(0.45f, (float)width / height, 0.1f, 1000f);
+            skyboxSP["projection_matrix"].SetValue(projectionMatrix);
+            skyboxSP["model_matrix"].SetValue(Matrix4.CreateTranslation(new Vector3(0, 0, 0)) * Matrix4.CreateRotation(new Vector3(0, 0, 0), 0.0f));
+            Console.WriteLine("Shader program (skybox) compiled and data injected - {0}s", getTimeFromStart().ToString());
+
+
+
+
 
 
             //Setup camera
@@ -171,7 +190,8 @@ namespace kVoxEngine
             watch.Stop();
             float deltaTime = (float)watch.ElapsedTicks / System.Diagnostics.Stopwatch.Frequency;
             watch.Restart();
-            program["view_matrix"].SetValue(camera.ViewMatrix);
+            terrainSP["view_matrix"].SetValue(camera.ViewMatrix);
+            skyboxSP["view_matrix"].SetValue(camera.ViewMatrix);
             frustum.UpdateFrustum(projectionMatrix, camera.ViewMatrix);
             if (down) camera.MoveRelative(Vector3.UnitZ * deltaTime * 5);
             if (up) camera.MoveRelative(-Vector3.UnitZ * deltaTime * 5);
@@ -182,21 +202,32 @@ namespace kVoxEngine
             
             Gl.Viewport(0, 0, width, height);
             Gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-            // draw our voxel chunks
+
+            //Skydome
+            Gl.Disable(EnableCap.DepthTest);
+            Gl.UseProgram(skyboxSP.ProgramID);
+            Gl.ActiveTexture(TextureUnit.Texture0);
+            Gl.BindTexture(skydomeTexture);
+            SkyDome.GradientDome(skyboxSP, 12).Draw();
+            Gl.Enable(EnableCap.DepthTest);
+            Gl.UseProgram(terrainSP);
+
             foreach (var chunk in chunks)
             {
                 if (frustum.Intersects(chunk.BoundingBox))
                 {
-                    chunk.RenderWithVAOSimple(program);
+                    chunk.RenderWithVAOSimple(terrainSP);
                     vertCount += chunk.vertexCount();
                 }
             }
             Glut.glutSetWindowTitle("kVoxGame - " + ((int)fps).ToString() + " fps " + vertCount.ToString() + " Verticles");
-            Gl.UseProgram(program);
-            program["view_matrix"].SetValue(camera.ViewMatrix);
             Glut.glutSwapBuffers();
         }
-        public static string fragmentShaderSource = @"" + File.ReadAllText(@"" + Directory.GetCurrentDirectory() + "/shaders/main.frag").ToString();
-        public static string vertexShaderSource = @"" + File.ReadAllText(@"" + Directory.GetCurrentDirectory() + "/shaders/main.vert").ToString();
+        //Terrain shader
+        public static string terrainFS = @"" + File.ReadAllText(@"" + Directory.GetCurrentDirectory() + "/shaders/main.frag").ToString();
+        public static string terrainVS = @"" + File.ReadAllText(@"" + Directory.GetCurrentDirectory() + "/shaders/main.vert").ToString();
+        //Skydome shader
+        public static string skyboxFS = @"" + File.ReadAllText(@"" + Directory.GetCurrentDirectory() + "/shaders/skybox.frag").ToString();
+        public static string skyboxVS = @"" + File.ReadAllText(@"" + Directory.GetCurrentDirectory() + "/shaders/skybox.vert").ToString();
     }
 }

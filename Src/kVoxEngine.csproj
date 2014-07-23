@@ -32,7 +32,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="OpenGL">
+    <Reference Include="OpenGL, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\Libs\OpenGL.dll</HintPath>
     </Reference>
     <Reference Include="SimplexNoise">
@@ -54,6 +55,7 @@
     <Compile Include="Camera.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SkyDome.cs" />
     <Compile Include="VoxelChunk.cs" />
   </ItemGroup>
   <ItemGroup>
